@@ -10,11 +10,15 @@ const taskSchema = new Schema ({
     priority:{
         type:String,
         required:true,
-        enum:["High","Medium","Low"]
+        enum:["HIGH PRIORITY","MODERATE PRIORITY","LOW PRIORITY"]
     },
     assignTo:{
         type:mongoose.Schema.ObjectId,
         ref:User,
+        required:false
+    },
+    assignToName:{
+        type:String,
         required:false
     },
     createdBy:{

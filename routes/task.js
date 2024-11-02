@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/', authMiddleware, async (req,res) => {
 
     try{
-        const {title,priority,assignTo,dueDate,status,checklists} = req.body;
+        const {title,priority,assignTo,assignToName,duedate,status,checklistData} = req.body;
         const { user } = req;
 
         let assignedTo = assignTo;
@@ -16,17 +16,15 @@ router.post('/', authMiddleware, async (req,res) => {
         if(assignedTo == '')
             assignedTo = user;
 
-        const checklistdata = checklists.split(",").map(checklist => checklist.trim());
-        const task = new Task({ title, priority, assignTo: assignedTo, createdBy: user, dueDate, status, checklists : checklistdata });
-    
-        console.log(task);
-    
+        const checklistdata = checklistData
+        const task = new Task({ title, priority, assignTo: assignedTo, assignToName: assignToName, createdBy: user, dueDate:duedate, status, checklists : checklistdata });
+        
         await task.save();
         res.status(200).json({ message: "Task created successfully" });
     
     }catch(e){
         console.log(e)
-        res.status(400).json({ message: "Job not created" });
+        res.status(400).json({ message: "Task not created" });
     }
 });
 
@@ -48,7 +46,16 @@ router.get('/',authMiddleware,async (req,res) => {
     try{
         let { user } = req;
         const userdata = await User.findById(user).select(`_id`);
-        const tasks = await Task.find({"createdBy":userdata._id});
+        const tasks = await Task.find({
+            $or: [
+              {
+                createdBy: userdata._id
+              },
+              {
+                assignTo: userdata._id
+              }
+            ]
+          })
         res.status(200).json(tasks);
 
     }catch(e){
@@ -56,18 +63,68 @@ router.get('/',authMiddleware,async (req,res) => {
     }
 });
 
-/******************get tasks w.r.t assignedTo User********** */
-router.get('/assignedto',authMiddleware,async (req,res) => {
+/******************get tasks count w.r.t createdBy User********** */
+router.get('/count',authMiddleware,async (req,res) => {
 
     try{
         let { user } = req;
-        const userdata = await User.findById(user).select('_id');
-        // console.log(userdata);
-        const tasks = await Task.find({"assignTo":userdata._id});
+        const userdata = await User.findById(user).select(`_id`);
+        const tasks = await Task.find({
+            $or: [
+              {
+                createdBy: userdata._id
+              },
+              {
+                assignTo: userdata._id
+              }
+            ]
+          })
         res.status(200).json(tasks);
 
     }catch(e){
         res.status(500).json({message : e.message});
     }
 });
+/******************update tasks - status********** */
+router.put("/:id", authMiddleware, async (req, res) => {
+    try{
+        const { id } = req.params;
+
+        // const {status} = req.body;
+        const {title,priority,assignTo,assignToName,duedate,status,checklistData} = req.body;
+
+        let task = await Task.findById(id);
+
+        if (!task) {
+            return res.status(404).json({ message: "Task not found" });
+        }
+
+        let assignedTo = assignTo;
+
+        if(assignedTo == '')
+            assignedTo = user;
+
+        const checklistdata = checklistData
+
+        task = await Task.findByIdAndUpdate(id, { title, priority, assignTo: assignedTo, assignToName: assignToName, createdBy: user, dueDate:duedate, status, checklists : checklistdata }, { new: true });
+
+        res.status(200).json(task);
+
+    }catch(e){
+        res.status(500).json({message : e.message});
+    }
+});
+
+
+/*******************delete task********* */
+router.delete("/:id", authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const task = await Task.findById(id);
+    if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+    }
+    await Task.findByIdAndDelete(id);
+    res.status(200).json({ message: "Task deleted successfully" });
+})
+
 module.exports = router;
