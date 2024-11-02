@@ -16,7 +16,7 @@ router.post(("/register"), async (req,res) => {
 
         const ifUserExists = await User.findOne({email});
         if(ifUserExists){
-            return res.status(200).json({message:"User Exists"});
+            return res.status(400).json({message:"User Exists"});
         }
     
         const hashedPassword = await bcrypt.hash(password,10);
@@ -38,12 +38,13 @@ router.post('/login', async (req,res) => {
         const ifUserExists = await User.findOne({email});
     
         if(!ifUserExists){
-            return res.status(200).json({message:"Wrong email or password"});
+            return res.status(400).json({message:"Wrong email or password"});
         }
     
-        const isPasswordMatch = bcrypt.compare(password,ifUserExists.password);
+        const isPasswordMatch = await bcrypt.compare(password,ifUserExists.password);
+
         if(!isPasswordMatch){
-            return res.status(200).json({ message: "Wrong email or password" });
+            return res.status(400).json({ message: "Wrong email or password" });
         }
     
         const payload = {id:ifUserExists._id};

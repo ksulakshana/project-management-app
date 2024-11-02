@@ -90,23 +90,13 @@ router.put("/:id", authMiddleware, async (req, res) => {
     try{
         const { id } = req.params;
 
-        // const {status} = req.body;
-        const {title,priority,assignTo,assignToName,duedate,status,checklistData} = req.body;
-
         let task = await Task.findById(id);
 
         if (!task) {
             return res.status(404).json({ message: "Task not found" });
         }
 
-        let assignedTo = assignTo;
-
-        if(assignedTo == '')
-            assignedTo = user;
-
-        const checklistdata = checklistData
-
-        task = await Task.findByIdAndUpdate(id, { title, priority, assignTo: assignedTo, assignToName: assignToName, createdBy: user, dueDate:duedate, status, checklists : checklistdata }, { new: true });
+         task = await Task.findByIdAndUpdate(id, req.body, { new: true });
 
         res.status(200).json(task);
 
